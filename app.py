@@ -1,3 +1,4 @@
+
 import streamlit as st
 import networkx as nx
 import pandas as pd
@@ -5,16 +6,10 @@ import matplotlib.pyplot as plt
 import heapq
 from io import BytesIO
 
-# --- CẤU HÌNH TRANG ---
 st.set_page_config(page_title="Đồ án: Ứng dụng thuật toán Đồ thị", layout="wide", page_icon="🎓")
 
-# ==============================================================================
-# PHẦN 1: THƯ VIỆN THUẬT TOÁN TỰ VIẾT (MANUAL IMPLEMENTATION)
-# (Phần này quan trọng nhất để lấy điểm thuật toán & trả lời vấn đáp)
-# ==============================================================================
 
 def my_bfs(G, start_node):
-    """Duyệt chiều rộng (Queue) - Độ phức tạp O(V+E)"""
     visited = set()
     queue = [start_node]
     visited.add(start_node)
@@ -24,7 +19,7 @@ def my_bfs(G, start_node):
     while queue:
         u = queue.pop(0)
         path_order.append(u)
-        neighbors = sorted(list(G.neighbors(u))) # Sort để thứ tự duyệt nhất quán
+        neighbors = sorted(list(G.neighbors(u))) 
         for v in neighbors:
             if v not in visited:
                 visited.add(v)
@@ -33,7 +28,6 @@ def my_bfs(G, start_node):
     return edges_path, path_order
 
 def my_dfs(G, start_node):
-    """Duyệt chiều sâu (Stack) - Độ phức tạp O(V+E)"""
     visited = set()
     stack = [start_node]
     path_order = []
@@ -44,7 +38,6 @@ def my_dfs(G, start_node):
         if u not in visited:
             visited.add(u)
             path_order.append(u)
-            # Reverse để khi pop ra sẽ lấy phần tử nhỏ trước (mô phỏng đúng thứ tự)
             neighbors = sorted(list(G.neighbors(u)), reverse=True) 
             for v in neighbors:
                 if v not in visited:
@@ -53,7 +46,6 @@ def my_dfs(G, start_node):
     return edges_path, path_order
 
 def my_dijkstra(G, start_node, end_node):
-    """Dijkstra dùng Min-Heap - Độ phức tạp O(E log V)"""
     distances = {node: float('infinity') for node in G.nodes()}
     distances[start_node] = 0
     pq = [(0, start_node)]
@@ -80,7 +72,6 @@ def my_dijkstra(G, start_node, end_node):
     return path, distances[end_node]
 
 def my_prim(G):
-    """Prim MST dùng Min-Heap - Độ phức tạp O(E log V)"""
     if G.is_directed(): return None, "Prim chỉ dùng cho đồ thị Vô hướng!"
     if not nx.is_connected(G): return None, "Đồ thị không liên thông!"
     
@@ -107,7 +98,6 @@ def my_prim(G):
     return mst_edges, total_w
 
 def my_kruskal(G):
-    """Kruskal MST dùng Union-Find - Độ phức tạp O(E log E)"""
     edges = sorted([(data.get('weight', 1), u, v) for u, v, data in G.edges(data=True)])
     parent = {n: n for n in G.nodes()}
     def find(n):
@@ -127,7 +117,6 @@ def my_kruskal(G):
     return mst, total_w
 
 def my_ford_fulkerson(G, source, sink):
-    """Edmonds-Karp (BFS tìm đường tăng luồng) - O(V E^2)"""
     if not G.is_directed(): return None, "Max Flow cần đồ thị CÓ HƯỚNG!"
     
     R = nx.DiGraph()
@@ -177,7 +166,6 @@ def my_ford_fulkerson(G, source, sink):
     return max_flow, path_flow_details
 
 def my_hierholzer(G):
-    """Tìm chu trình Euler (Hierholzer) - O(E)"""
     if not nx.is_connected(G.to_undirected()): return None, "Đồ thị không liên thông!"
     
     if not G.is_directed():
@@ -207,15 +195,11 @@ def my_hierholzer(G):
     return circuit[::-1], "Thành công"
 
 def my_fleury(G):
-    """Tìm chu trình Euler (Fleury) - O(E^2)"""
-    # Fleury chậm hơn Hierholzer nhưng đề bài yêu cầu
     if not nx.is_connected(G.to_undirected()): return None, "Đồ thị không liên thông!"
     
-    # Kiểm tra điều kiện Euler
     odd_nodes = [v for v, d in G.degree() if d % 2 != 0]
-    if len(odd_nodes) > 2: return None, "Không có đường đi Euler (Quá nhiều đỉnh bậc lẻ)."
+    if len(odd_nodes) > 2: return None, "Không có đường đi Euler."
     
-    # Bắt đầu từ đỉnh bậc lẻ (nếu có) hoặc đỉnh bất kỳ
     u = odd_nodes[0] if odd_nodes else list(G.nodes())[0]
     
     temp_G = G.copy()
@@ -224,19 +208,15 @@ def my_fleury(G):
     while temp_G.number_of_edges() > 0:
         neighbors = list(temp_G.neighbors(u))
         
-        # Tìm cạnh để đi tiếp
         next_v = None
         for v in neighbors:
-            # Ưu tiên cạnh không phải là cầu (bridge)
             temp_G.remove_edge(u, v)
-            if nx.has_path(temp_G, u, v) or temp_G.degree(u) == 0: # Không phải cầu hoặc là cạnh cuối
+            if nx.has_path(temp_G, u, v) or temp_G.degree(u) == 0: 
                 next_v = v
-                break # Đã tìm thấy cạnh hợp lệ, đi luôn
+                break 
             else:
-                # Nếu là cầu, trả lại cạnh và thử cạnh khác
                 temp_G.add_edge(u, v, weight=1)
         
-        # Nếu tất cả đều là cầu (hoặc chỉ còn 1 cạnh), chọn cạnh đầu tiên còn lại
         if next_v is None and neighbors:
             next_v = neighbors[0]
             temp_G.remove_edge(u, next_v)
@@ -266,11 +246,8 @@ def check_bipartite_manual(G):
                         return False, {}
     return True, color
 
-# ==============================================================================
-# PHẦN 2: HÀM HỖ TRỢ & GIAO DIỆN
-# ==============================================================================
 
-def ve_do_thi(G, highlight_edges=None, highlight_nodes=None, title="", color_map=None):
+def ve_do_thi(G, highlight_edges=None, highlight_nodes=None, title="", color_map=None, show_weights=True):
     pos = nx.spring_layout(G, seed=42)
     plt.figure(figsize=(8, 5))
     
@@ -282,8 +259,10 @@ def ve_do_thi(G, highlight_edges=None, highlight_nodes=None, title="", color_map
     nx.draw_networkx_nodes(G, pos, node_color=node_colors, node_size=600)
     nx.draw_networkx_labels(G, pos, font_weight='bold')
     nx.draw_networkx_edges(G, pos, edge_color='#b2bec3', width=1, arrows=G.is_directed(), arrowsize=15)
-    labels = nx.get_edge_attributes(G, 'weight')
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
+    
+    if show_weights:
+        labels = nx.get_edge_attributes(G, 'weight')
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
     
     if highlight_edges:
         nx.draw_networkx_edges(G, pos, edgelist=highlight_edges, edge_color='#e17055', width=3)
@@ -294,14 +273,19 @@ def ve_do_thi(G, highlight_edges=None, highlight_nodes=None, title="", color_map
     plt.axis('off')
     return plt
 
-st.title("🎓 ĐỒ ÁN CTDL & GIẢI THUẬT: GRAPH THEORY")
+st.title("🎓 ỨNG DỤNG THUẬT TOÁN ĐỒ THỊ ")
 st.markdown("---")
 
-# --- SIDEBAR: NHẬP LIỆU ---
 with st.sidebar:
     st.header("1. Nhập Dữ Liệu")
-    type_g = st.radio("Loại đồ thị:", ["Vô hướng", "Có hướng"])
+    
+    # Thêm tùy chọn Có/Không trọng số
+    type_g = st.radio("Hướng đồ thị:", ["Vô hướng", "Có hướng"])
+    is_weighted = st.checkbox("Đồ thị có trọng số?", value=True)
+    
     input_text = st.text_area("Nhập cạnh (u v w):", "A B 4\nA C 2\nB C 5\nB D 10\nC E 3\nD F 11\nE D 4")
+    
+    st.caption("Nếu không chọn 'Có trọng số', giá trị w sẽ bị bỏ qua (mặc định = 1).")
     
     if st.button("🚀 Khởi tạo Đồ thị", type="primary"):
         G = nx.DiGraph() if type_g == "Có hướng" else nx.Graph()
@@ -309,38 +293,46 @@ with st.sidebar:
             for line in input_text.strip().split('\n'):
                 parts = line.split()
                 if len(parts) >= 2:
-                    w = int(parts[2]) if len(parts) > 2 else 1
-                    G.add_edge(parts[0], parts[1], weight=w)
+                    u, v = parts[0], parts[1]
+                    if is_weighted and len(parts) > 2:
+                        w = int(parts[2])
+                    else:
+                        w = 1 
+                    
+                    G.add_edge(u, v, weight=w)
+            
             st.session_state['graph'] = G
             st.session_state['input_raw'] = input_text
+            st.session_state['is_weighted'] = is_weighted 
             st.success("Đã nạp dữ liệu!")
-        except: st.error("Lỗi định dạng!")
+        except ValueError: st.error("Lỗi: Trọng số phải là số nguyên!")
+        except Exception as e: st.error(f"Lỗi định dạng: {e}")
 
     if 'input_raw' in st.session_state:
         st.divider()
         st.write("📂 **Lưu trữ:**")
         st.download_button("💾 Tải file Graph.txt", st.session_state['input_raw'], "graph.txt")
 
-# --- MAIN SCREEN ---
 if 'graph' in st.session_state:
     G = st.session_state['graph']
+    weighted_mode = st.session_state.get('is_weighted', True)
     
     tab1, tab2, tab3 = st.tabs(["🖼️ Thuật toán & Trực quan", "📊 Cấu trúc dữ liệu", "🔍 Kiểm tra tính chất"])
     
-    # TAB 1: THUẬT TOÁN (Đủ 100% yêu cầu Cơ bản + Nâng cao)
+    # TAB 1: THUẬT TOÁN
     with tab1:
         c1, c2 = st.columns([1, 2])
         with c1:
             st.subheader("Bảng điều khiển")
             algo = st.selectbox("Chọn thuật toán:", 
-                ["BFS (Duyệt chiều rộng)", 
-                 "DFS (Duyệt chiều sâu)", 
-                 "Dijkstra (Đường đi ngắn nhất)", 
-                 "Prim (MST - Cây khung)", 
-                 "Kruskal (MST - Cây khung)", 
-                 "Ford-Fulkerson (Luồng cực đại)", 
-                 "Hierholzer (Chu trình Euler)",
-                 "Fleury (Đường đi Euler)"])
+                ["BFS", 
+                 "DFS", 
+                 "Dijkstra", 
+                 "Prim", 
+                 "Kruskal", 
+                 "Ford-Fulkerson", 
+                 "Hierholzer",
+                 "Fleury"])
             
             nodes = list(G.nodes())
             start = st.selectbox("Đỉnh bắt đầu:", nodes)
@@ -348,8 +340,7 @@ if 'graph' in st.session_state:
             
             run_btn = st.button("▶️ Chạy mô phỏng", type="primary")
 
-            # === PHẦN GIẢI THÍCH LÝ THUYẾT (Mới thêm cho chuyên nghiệp) ===
-            with st.expander("📚 Kiến thức thuật toán (Cho báo cáo)"):
+            with st.expander("📚 Kiến thức thuật toán"):
                 if "BFS" in algo:
                     st.markdown("**Độ phức tạp:** O(V + E)")
                     st.write("Sử dụng hàng đợi (Queue). Duyệt theo từng lớp lan rộng ra xung quanh.")
@@ -376,42 +367,44 @@ if 'graph' in st.session_state:
             msg = ""
             if run_btn:
                 try:
+                    # Truyền tham số show_weights=weighted_mode vào hàm vẽ
+                    
                     if "BFS" in algo:
                         edges, order = my_bfs(G, start)
-                        fig = ve_do_thi(G, highlight_edges=edges, title=f"BFS từ {start}")
+                        fig = ve_do_thi(G, highlight_edges=edges, title=f"BFS từ {start}", show_weights=weighted_mode)
                         msg = f"Thứ tự duyệt: {order}"
                         
                     elif "DFS" in algo:
                         edges, order = my_dfs(G, start)
-                        fig = ve_do_thi(G, highlight_edges=edges, title=f"DFS từ {start}")
+                        fig = ve_do_thi(G, highlight_edges=edges, title=f"DFS từ {start}", show_weights=weighted_mode)
                         msg = f"Thứ tự duyệt: {order}"
                         
                     elif "Dijkstra" in algo:
                         path, dist = my_dijkstra(G, start, end)
                         if path:
                             edges = list(zip(path, path[1:]))
-                            fig = ve_do_thi(G, highlight_edges=edges, highlight_nodes=path, title=f"Chi phí: {dist}")
+                            fig = ve_do_thi(G, highlight_edges=edges, highlight_nodes=path, title=f"Chi phí: {dist}", show_weights=weighted_mode)
                             msg = f"Đường đi: {' → '.join(path)}"
                         else: st.error("Không có đường đi")
                         
                     elif "Prim" in algo:
                         mst, w = my_prim(G)
                         if mst:
-                            fig = ve_do_thi(G, highlight_edges=mst, title=f"Prim Cost: {w}")
+                            fig = ve_do_thi(G, highlight_edges=mst, title=f"Prim Cost: {w}", show_weights=weighted_mode)
                             msg = f"Các cạnh MST: {mst}"
                         else: st.error(w)
                         
                     elif "Kruskal" in algo:
                         mst, w = my_kruskal(G)
                         if mst:
-                            fig = ve_do_thi(G, highlight_edges=mst, title=f"Kruskal Cost: {w}")
+                            fig = ve_do_thi(G, highlight_edges=mst, title=f"Kruskal Cost: {w}", show_weights=weighted_mode)
                             msg = f"Các cạnh MST: {mst}"
                         else: st.error(w)
                         
                     elif "Ford-Fulkerson" in algo:
                         val, details = my_ford_fulkerson(G, start, end)
                         if val is not None:
-                            fig = ve_do_thi(G, title=f"Max Flow: {val}")
+                            fig = ve_do_thi(G, title=f"Max Flow: {val}", show_weights=weighted_mode)
                             msg = f"Luồng cực đại: {val}"
                         else: st.error(details)
 
@@ -419,7 +412,7 @@ if 'graph' in st.session_state:
                         path, err = my_hierholzer(G)
                         if path:
                             edges = list(zip(path, path[1:]))
-                            fig = ve_do_thi(G, highlight_edges=edges, title="Hierholzer Circuit")
+                            fig = ve_do_thi(G, highlight_edges=edges, title="Hierholzer Circuit", show_weights=weighted_mode)
                             msg = f"Chu trình: {' → '.join(map(str, path))}"
                         else: st.error(err)
                         
@@ -427,43 +420,42 @@ if 'graph' in st.session_state:
                         path, err = my_fleury(G)
                         if path:
                             edges = list(zip(path, path[1:]))
-                            fig = ve_do_thi(G, highlight_edges=edges, title="Fleury Path")
+                            fig = ve_do_thi(G, highlight_edges=edges, title="Fleury Path", show_weights=weighted_mode)
                             msg = f"Đường đi Euler: {' → '.join(map(str, path))}"
                         else: st.error(err)
                         
                 except Exception as e: st.error(f"Lỗi runtime: {e}")
             
             else:
-                fig = ve_do_thi(G, title="Đồ thị ban đầu")
+                fig = ve_do_thi(G, title="Đồ thị ban đầu", show_weights=weighted_mode)
 
             st.pyplot(fig)
             if msg: st.info(msg)
 
-    # TAB 2: BIỂU DIỄN DỮ LIỆU (Cập nhật giao diện giải thích chi tiết)
+    # TAB 2: BIỂU DIỄN DỮ LIỆU
     with tab2:
         st.subheader("🔁 Chuyển đổi các dạng biểu diễn")
         st.markdown("Giúp so sánh cách máy tính lưu trữ đồ thị trong bộ nhớ.")
         
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.write("###### 1. Danh sách cạnh (Edge List)")
+            st.write("###### 1. Danh sách cạnh ")
             df_edges = nx.to_pandas_edgelist(G)
+            if not weighted_mode and 'weight' in df_edges.columns:
+                df_edges = df_edges.drop(columns=['weight'])
             st.dataframe(df_edges, hide_index=True, use_container_width=True)
-            st.caption("📝 **Ý nghĩa:** Chỉ lưu trữ các cặp đỉnh nối và trọng số. Tiết kiệm bộ nhớ nhất (Sparse Graph).")
         with c2:
-            st.write("###### 2. Ma trận kề (Adj Matrix)")
+            st.write("###### 2. Ma trận kề ")
             matrix = nx.adjacency_matrix(G).todense()
             st.dataframe(pd.DataFrame(matrix, index=G.nodes(), columns=G.nodes()), use_container_width=True)
-            st.caption("📝 **Ý nghĩa:** Dùng mảng 2 chiều. Ô [i][j] > 0 tức là có cạnh. Tra cứu cực nhanh O(1).")
         with c3:
-            st.write("###### 3. Danh sách kề (Adj List)")
+            st.write("###### 3. Danh sách kề ")
             adj_dict = {n: list(G.neighbors(n)) for n in G.nodes()}
             st.json(adj_dict)
-            st.caption("📝 **Ý nghĩa:** Mỗi đỉnh lưu danh sách các hàng xóm. Cân bằng giữa tốc độ và bộ nhớ.")
 
     # TAB 3: KIỂM TRA TÍNH CHẤT
     with tab3:
-        st.subheader("Kiểm tra Đồ thị 2 phía (Bipartite)")
+        st.subheader("Kiểm tra Đồ thị 2 phía ")
         is_bi, color_map = check_bipartite_manual(G)
         
         c1, c2 = st.columns([1, 2])
@@ -476,11 +468,12 @@ if 'graph' in st.session_state:
                 st.write(f"**Tập V:** {set_1}")
             else:
                 st.error("❌ KHÔNG PHẢI đồ thị 2 phía")
-                st.write("Nguyên nhân: Tồn tại chu trình lẻ hoặc cạnh nối 2 đỉnh cùng màu.")
         with c2:
             if is_bi:
-                fig_bi = ve_do_thi(G, title="Phân lớp 2 phía (Đỏ - Xanh)", color_map=color_map)
+                fig_bi = ve_do_thi(G, title="Phân lớp 2 phía (Đỏ - Xanh)", color_map=color_map, show_weights=weighted_mode)
                 st.pyplot(fig_bi)
 
 else:
-    st.info("👈 Mời bạn nhập dữ liệu ở thanh bên trái để bắt đầu.")
+    st.info("👈Bạn nhập thanh dữ liệu bên trái để bắt đầu nhé .")
+
+
